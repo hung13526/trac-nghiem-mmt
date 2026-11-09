@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hệ thống Ôn tập Trắc nghiệm Mạng Máy Tính - UTC & Eduso</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="#" class="brand">
+        <div class="brand-icon">🌐</div>
+        <div>
+          <div class="brand-title">Ôn Tập Mạng Máy Tính</div>
+          <div class="brand-sub">Đại học Giao Thông Vận Tải (UTC) • Eduso Exam Hub</div>
+        </div>
+      </a>
+
+      <div class="nav-actions">
+        <!-- Dark / Light Mode Toggle -->
+        <button id="btnTheme" class="btn btn-outline btn-sm" title="Chuyển chế độ sáng / tối">
+          <span id="themeIcon">🌙</span> Giao diện
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 5 Chapter Tabs Navigation -->
+  <div class="tabs-scroll-wrapper">
+    <div class="tabs-container" id="tabsContainer">
+      <!-- Tabs populated dynamically via app.js -->
+    </div>
+  </div>
+
+  <!-- Main Body Grid Layout -->
+  <main class="main-wrapper">
+    
+    <!-- Left Column: Questions Area -->
+    <section class="content-area">
+
+      <!-- Chapter / Exam Banner -->
+      <div class="chapter-banner">
+        <div class="banner-info">
+          <h1 id="bannerTitle">Chương 1: Tổng quan về MMT và Internet</h1>
+          <p id="bannerSubtitle">Mô hình OSI, TCP/IP, Tầng Vật lý & Môi trường truyền dẫn</p>
+          <div class="banner-doc" id="bannerDoc">
+            📄 Nguồn: MMT - 02 - Ch01 - Trắc nghiệm chương 1 và đáp án.pdf
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+          <!-- Mode Switcher -->
+          <div class="mode-switch">
+            <button class="mode-btn active" id="btnModePractice">
+              <span>📖</span> Luyện tập (Tức thì)
+            </button>
+            <button class="mode-btn" id="btnModeExam">
+              <span>⏱️</span> Thi thử (Có điểm)
+            </button>
+          </div>
+
+          <!-- Timer for Exam Mode -->
+          <div class="exam-timer-box" id="examTimerBox">
+            <span>⏳</span>
+            <span id="timerDisplay">45:00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Control Bar: Search & Filters -->
+      <div class="control-bar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Tìm kiếm nội dung câu hỏi, từ khóa (MAC, IP, OSI, TCP, UDP...)...">
+        </div>
+
+        <div class="filter-tags">
+          <button class="filter-chip active" data-filter="all">Tất cả</button>
+          <button class="filter-chip" data-filter="answered">Đã làm</button>
+          <button class="filter-chip" data-filter="unanswered">Chưa làm</button>
+          <button class="filter-chip" data-filter="flagged">★ Đã đánh dấu</button>
+          <button class="filter-chip chip-wrong" data-filter="wrong">✗ Câu sai</button>
+          <button class="filter-chip chip-correct" data-filter="correct">✓ Câu đúng</button>
+        </div>
+      </div>
+
+      <!-- Question Cards List -->
+      <div class="questions-list" id="questionsList">
+        <!-- Rendered by app.js -->
+      </div>
+
+    </section>
+
+    <!-- Right Column: Sticky Question Palette & Progress -->
+    <aside class="sidebar">
+      <div class="sidebar-title">
+        <span>Tiến độ làm bài</span>
+        <span id="progressCountDisplay" style="color: var(--primary); font-size: 0.85rem;">0/0 câu (0%)</span>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="progress-container">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; text-align: center;">
+        <div style="background: var(--success-light); color: var(--success-text); padding: 0.5rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 700;">
+          <div id="sidebarStatCorrect" style="font-size: 1.2rem; font-weight: 800;">0</div>
+          Câu đúng
+        </div>
+        <div style="background: var(--danger-light); color: var(--danger-text); padding: 0.5rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 700;">
+          <div id="sidebarStatWrong" style="font-size: 1.2rem; font-weight: 800;">0</div>
+          Câu sai
+        </div>
+      </div>
+
+      <!-- Palette Title & Legend -->
+      <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+        <span>Bảng chuyển nhanh câu</span>
+      </div>
+
+      <!-- Palette Grid -->
+      <div class="palette-grid" id="paletteGrid">
+        <!-- Palette items rendered by app.js -->
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="sidebar-actions">
+        <button id="btnSubmitExam" class="btn btn-success" style="display: none; width: 100%;">
+          <span>📝</span> Nộp bài & Chấm điểm
+        </button>
+        <button id="btnShowAllExplanations" class="btn btn-outline" style="width: 100%;">
+          <span>💡</span> Bật/Tắt tất cả giải thích
+        </button>
+        <button id="btnResetQuiz" class="btn btn-outline" style="width: 100%;">
+          <span>🔄</span> Làm lại đề này
+        </button>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- Modal Kết Quả Thi -->
+  <div class="modal-overlay" id="resultModal">
+    <div class="modal-card">
+      <div class="result-icon pass" id="modalIcon">🏆</div>
+      <h2 class="result-title" id="modalTitle">Hoàn thành bài kiểm tra!</h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Kết quả làm bài thi của bạn:</p>
+
+      <div class="result-score-highlight" id="modalScore">190 / 200</div>
+
+      <div class="result-grid">
+        <div class="result-stat-box" style="border-top: 3px solid var(--success);">
+          <div class="result-stat-num" id="modalCorrect" style="color: var(--success);">95</div>
+          <div class="result-stat-label">Số câu đúng</div>
+        </div>
+        <div class="result-stat-box" style="border-top: 3px solid var(--danger);">
+          <div class="result-stat-num" id="modalWrong" style="color: var(--danger);">5</div>
+          <div class="result-stat-label">Số câu sai</div>
+        </div>
+        <div class="result-stat-box" style="border-top: 3px solid var(--warning);">
+          <div class="result-stat-num" id="modalUnanswered" style="color: var(--warning);">0</div>
+          <div class="result-stat-label">Chưa trả lời</div>
+        </div>
+      </div>
+
+      <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+        Hệ thống đã lưu lại toàn bộ kết quả. Bạn có thể xem lại chi tiết từng câu sai hoặc làm lại để cải thiện điểm số.
+      </p>
+
+      <div class="modal-buttons">
+        <button class="btn btn-danger" id="btnModalReview">
+          🔍 Xem lại các câu sai
+        </button>
+        <button class="btn btn-primary" id="btnModalRetake">
+          🔄 Làm lại đề thi
+        </button>
+        <button class="btn btn-outline" id="btnModalClose">
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>Hệ thống Học tập & Ôn thi Trắc nghiệm Mạng Máy Tính • Bộ môn Mạng & Truyền thông Dữ liệu UTC</p>
+    <p style="margin-top: 0.35rem; font-size: 0.78rem; opacity: 0.8;">
+      Bao gồm trắc nghiệm Chương 1, 2, 3, 4 và Đề thi mẫu Eduso 100 câu 45 phút 200 điểm có lời giải chi tiết.
+    </p>
+  </footer>
+
+  <!-- Script Libraries -->
+  <script src="quiz_data.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>
+
