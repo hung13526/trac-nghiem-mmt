@@ -1,15 +1,16 @@
 /**
  * Mạng Máy Tính - UTC & Eduso Practice Web App Logic
+ * Rule: Chỉ khi nào nhấn nút nộp bài thì mới hiện đáp án và giải thích!
+ * Hỗ trợ chọn nhiều đáp án độc lập cho các câu hỏi chọn nhiều (Chọn 3).
  */
 
 // Application State
 const state = {
   currentChapterId: "ch1",
-  mode: "practice", // 'practice' or 'exam'
-  userAnswers: {},  // { [chapterId]: { [qId]: ['A', 'B'] or 'text' } }
-  flaggedQuestions: {}, // { [chapterId]: { [qId]: true } }
-  examSubmitted: {}, // { [chapterId]: boolean }
-  filter: "all",    // 'all', 'answered', 'unanswered', 'flagged', 'wrong', 'correct'
+  userAnswers: {},       // { [chapterId]: { [qId]: ['A', 'B'] or 'text' } }
+  flaggedQuestions: {},  // { [chapterId]: { [qId]: true } }
+  examSubmitted: {},     // { [chapterId]: boolean } - true CHỈ KHI ĐÃ BẤM NỘP BÀI
+  filter: "all",         // 'all', 'answered', 'unanswered', 'flagged', 'wrong', 'correct'
   searchQuery: "",
   theme: localStorage.getItem("mmt_theme") || "light",
   timerSeconds: 45 * 60,
@@ -101,12 +102,6 @@ function getChapterIcon(id) {
 function switchChapter(chapterId) {
   if (state.currentChapterId === chapterId) return;
 
-  // Clear timer if switching away
-  if (state.timerInterval) {
-    clearInterval(state.timerInterval);
-    state.timerInterval = null;
-  }
-
   state.currentChapterId = chapterId;
   state.filter = "all";
   state.searchQuery = "";
@@ -114,18 +109,73 @@ function switchChapter(chapterId) {
   const searchInput = document.getElementById("searchInput");
   if (searchInput) searchInput.value = "";
 
+  // Reset filter chip UI
+  document.querySelectorAll(".filter-chip").forEach((c) => {
+    c.classList.toggle("active", c.dataset.filter === "all");
+  });
+
   // Update tabs active state
   document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.id === chapterId);
   });
 
+  resetOrStartTimer();
   renderCurrentChapter();
+}
+
+// Timer Logic
+function resetOrStartTimer() {
+  if (state.timerInterval) {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
+
+  const isSubmitted = !!state.examSubmitted[state.currentChapterId];
+  if (isSubmitted) {
+    const display = document.getElementById("timerDisplay");
+    if (display) display.textContent = "Đã hoàn thành";
+    return;
+  }
+
+  const chapter = QUIZ_DATA[state.currentChapterId];
+  state.timerSeconds = chapter.timeLimit || 45 * 60;
+  updateTimerDisplay();
+
+  state.timerInterval = setInterval(() => {
+    state.timerSeconds--;
+    updateTimerDisplay();
+
+    if (state.timerSeconds <= 0) {
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+      alert("Hết giờ làm bài! Hệ thống sẽ tự động nộp bài.");
+      submitExam();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const display = document.getElementById("timerDisplay");
+  const timerBox = document.getElementById("examTimerBox");
+  if (!display) return;
+
+  const minutes = Math.floor(state.timerSeconds / 60);
+  const seconds = state.timerSeconds % 60;
+  display.textContent = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+
+  if (timerBox) {
+    if (state.timerSeconds <= 300) {
+      timerBox.classList.add("warning");
+    } else {
+      timerBox.classList.remove("warning");
+    }
+  }
 }
 
 // Event Listeners
 function initEventListeners() {
   // Theme toggle
-  document.getElementById("btnTheme").addEventListener("click", toggleTheme);
+  document.getElementById("btnTheme")?.addEventListener("click", toggleTheme);
 
   // Search input
   const searchInput = document.getElementById("searchInput");
@@ -146,96 +196,29 @@ function initEventListeners() {
     });
   });
 
-  // Mode buttons (Practice vs Exam)
-  document.getElementById("btnModePractice").addEventListener("click", () => setMode("practice"));
-  document.getElementById("btnModeExam").addEventListener("click", () => setMode("exam"));
+  // Submission Buttons
+  document.getElementById("btnSubmitExam")?.addEventListener("click", confirmSubmitExam);
+  document.getElementById("btnBottomSubmit")?.addEventListener("click", confirmSubmitExam);
 
-  // Sidebar Actions
-  document.getElementById("btnSubmitExam").addEventListener("click", confirmSubmitExam);
-  document.getElementById("btnResetQuiz").addEventListener("click", resetCurrentChapter);
-  document.getElementById("btnShowAllExplanations")?.addEventListener("click", toggleAllExplanations);
+  // Reset / Retake Buttons
+  document.getElementById("btnResetQuiz")?.addEventListener("click", resetCurrentChapter);
+  document.getElementById("btnToggleAllExp")?.addEventListener("click", toggleAllExplanations);
 
   // Modal Buttons
   document.getElementById("btnModalReview")?.addEventListener("click", () => {
     closeModal();
-    // switch to review wrong answers
-    setMode("practice");
+    // Activate wrong filter so user can immediately review wrong questions
     const wrongChip = document.querySelector(".filter-chip[data-filter='wrong']");
     if (wrongChip) wrongChip.click();
+    window.scrollTo({ top: 120, behavior: "smooth" });
   });
+
   document.getElementById("btnModalRetake")?.addEventListener("click", () => {
     closeModal();
     resetCurrentChapter();
   });
+
   document.getElementById("btnModalClose")?.addEventListener("click", closeModal);
-}
-
-// Mode Selection
-function setMode(mode) {
-  state.mode = mode;
-  document.getElementById("btnModePractice").classList.toggle("active", mode === "practice");
-  document.getElementById("btnModeExam").classList.toggle("active", mode === "exam");
-
-  const timerBox = document.getElementById("examTimerBox");
-  const submitBtn = document.getElementById("btnSubmitExam");
-  const showAllExpBtn = document.getElementById("btnShowAllExplanations");
-
-  if (mode === "exam") {
-    if (timerBox) timerBox.style.display = "flex";
-    if (submitBtn) submitBtn.style.display = "flex";
-    if (showAllExpBtn) showAllExpBtn.style.display = "none";
-    startTimer();
-  } else {
-    if (timerBox) timerBox.style.display = "none";
-    if (submitBtn) submitBtn.style.display = "none";
-    if (showAllExpBtn) showAllExpBtn.style.display = "flex";
-    if (state.timerInterval) {
-      clearInterval(state.timerInterval);
-      state.timerInterval = null;
-    }
-  }
-
-  renderCurrentChapter();
-}
-
-// Timer Logic
-function startTimer() {
-  if (state.timerInterval) clearInterval(state.timerInterval);
-
-  const chapter = QUIZ_DATA[state.currentChapterId];
-  state.timerSeconds = chapter.timeLimit || 45 * 60;
-
-  updateTimerDisplay();
-
-  state.timerInterval = setInterval(() => {
-    state.timerSeconds--;
-    updateTimerDisplay();
-
-    if (state.timerSeconds <= 0) {
-      clearInterval(state.timerInterval);
-      state.timerInterval = null;
-      alert("Hết giờ làm bài! Hệ thống sẽ tự động nộp bài của bạn.");
-      submitExam();
-    }
-  }, 1000);
-}
-
-function updateTimerDisplay() {
-  const display = document.getElementById("timerDisplay");
-  const timerBox = document.getElementById("examTimerBox");
-  if (!display) return;
-
-  const minutes = Math.floor(state.timerSeconds / 60);
-  const seconds = state.timerSeconds % 60;
-  display.textContent = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-
-  if (timerBox) {
-    if (state.timerSeconds <= 300) { // < 5 mins
-      timerBox.classList.add("warning");
-    } else {
-      timerBox.classList.remove("warning");
-    }
-  }
 }
 
 // Render Current Chapter
@@ -243,83 +226,113 @@ function renderCurrentChapter() {
   const chapter = QUIZ_DATA[state.currentChapterId];
   if (!chapter) return;
 
+  const isSubmitted = !!state.examSubmitted[chapter.id];
+
   // Update Banner Info
   document.getElementById("bannerTitle").textContent = chapter.title;
   document.getElementById("bannerSubtitle").textContent = chapter.subtitle;
   document.getElementById("bannerDoc").innerHTML = `📄 Nguồn: <strong>${chapter.docName}</strong>`;
+
+  // Update Status Banner
+  const statusBadge = document.getElementById("bannerStatusBadge");
+  if (statusBadge) {
+    if (isSubmitted) {
+      statusBadge.className = "banner-status-badge submitted";
+      statusBadge.innerHTML = `<span>✓</span> Đã nộp bài (Đang xem đáp án & giải thích)`;
+    } else {
+      statusBadge.className = "banner-status-badge doing";
+      statusBadge.innerHTML = `<span>✏️</span> Đang làm bài (Chọn đáp án rồi nhấn Nộp bài)`;
+    }
+  }
+
+  // Update Submit Button States
+  const submitBtn = document.getElementById("btnSubmitExam");
+  const bottomSubmitBtn = document.getElementById("btnBottomSubmit");
+  const toggleExpBtn = document.getElementById("btnToggleAllExp");
+
+  if (submitBtn) {
+    submitBtn.style.display = isSubmitted ? "none" : "flex";
+  }
+  if (bottomSubmitBtn) {
+    bottomSubmitBtn.style.display = isSubmitted ? "none" : "flex";
+  }
+  if (toggleExpBtn) {
+    toggleExpBtn.style.display = isSubmitted ? "flex" : "none";
+  }
 
   // Ensure state dictionaries
   if (!state.userAnswers[chapter.id]) state.userAnswers[chapter.id] = {};
   if (!state.flaggedQuestions[chapter.id]) state.flaggedQuestions[chapter.id] = {};
 
   // Render question list
-  renderQuestionsList(chapter);
+  renderQuestionsList(chapter, isSubmitted);
 
   // Render sidebar question palette
-  renderPalette(chapter);
+  renderPalette(chapter, isSubmitted);
 
   // Update progress stats
-  updateProgress(chapter);
+  updateProgress(chapter, isSubmitted);
 }
 
 // Render Questions
-function renderQuestionsList(chapter) {
+function renderQuestionsList(chapter, isSubmitted) {
   const container = document.getElementById("questionsList");
   if (!container) return;
   container.innerHTML = "";
 
-  const isExamSubmitted = state.examSubmitted[chapter.id];
-  const isPractice = state.mode === "practice";
-
   chapter.questions.forEach((q, index) => {
     const qNum = q.number || (index + 1);
     const card = document.createElement("div");
-    card.className = "question-card";
     card.id = `qcard_${q.id}`;
     card.dataset.id = q.id;
     card.dataset.index = index;
 
     const currentAns = state.userAnswers[chapter.id][q.id] || [];
     const isFlagged = !!state.flaggedQuestions[chapter.id][q.id];
-
-    // Evaluate answer correctness if practice or exam submitted
-    const isAnswered = q.type === "fill" ? (typeof currentAns === "string" && currentAns.trim().length > 0) : (Array.isArray(currentAns) && currentAns.length > 0);
+    const isAnswered = q.type === "fill"
+      ? (typeof currentAns === "string" && currentAns.trim().length > 0)
+      : (Array.isArray(currentAns) && currentAns.length > 0);
     const isCorrect = isAnswered && checkAnswerCorrect(q, currentAns);
 
-    // Meta badges
+    // Card class based on submission
+    let cardClass = "question-card";
+    if (isSubmitted) {
+      cardClass += isCorrect ? " status-correct" : " status-wrong";
+    }
+    card.className = cardClass;
+
+    // Level badges
     let levelClass = "level-nb";
     if (q.level === "Thông hiểu") levelClass = "level-th";
     if (q.level === "Vận dụng") levelClass = "level-vd";
     if (q.level === "Vận dụng cao") levelClass = "level-vdc";
 
+    // Status badge (ONLY SHOWN AFTER SUBMISSION!)
     let statusBadgeHtml = "";
-    if (isPractice && isAnswered) {
-      statusBadgeHtml = isCorrect
-        ? `<span class="q-status-badge correct" style="display:inline-flex;">✓ Đúng</span>`
-        : `<span class="q-status-badge incorrect" style="display:inline-flex;">✗ Sai</span>`;
-    } else if (isExamSubmitted) {
+    if (isSubmitted) {
       if (!isAnswered) {
-        statusBadgeHtml = `<span class="q-status-badge" style="display:inline-flex; background:var(--bg-card-hover); color:var(--text-muted);">Chưa làm</span>`;
+        statusBadgeHtml = `<span class="q-status-badge" style="display:inline-flex; background:var(--bg-card-hover); color:var(--text-muted); border:1px solid var(--border-color);">Chưa làm (0/${q.points || 2}đ)</span>`;
+      } else if (isCorrect) {
+        statusBadgeHtml = `<span class="q-status-badge correct" style="display:inline-flex;">✓ Đúng (+${q.points || 2}đ)</span>`;
       } else {
-        statusBadgeHtml = isCorrect
-          ? `<span class="q-status-badge correct" style="display:inline-flex;">✓ Đúng (+${q.points}đ)</span>`
-          : `<span class="q-status-badge incorrect" style="display:inline-flex;">✗ Sai (0đ)</span>`;
+        statusBadgeHtml = `<span class="q-status-badge incorrect" style="display:inline-flex;">✗ Sai (0/${q.points || 2}đ)</span>`;
       }
     }
 
     // Card Header
+    const isMultiChoice = q.type === "multiple";
     const headerHtml = `
       <div class="question-header">
         <div class="q-meta">
           <span class="q-num">Câu ${qNum}</span>
           ${q.level ? `<span class="q-badge ${levelClass}">${q.level}</span>` : ""}
-          ${q.type === "multiple" ? `<span class="q-badge" style="background:#fef08a; color:#854d0e;">Chọn nhiều</span>` : ""}
-          ${q.type === "fill" ? `<span class="q-badge" style="background:#e0e7ff; color:#3730a3;">Điền đáp án</span>` : ""}
+          ${isMultiChoice ? `<span class="q-badge badge-multi">☑️ Chọn nhiều đáp án</span>` : ""}
+          ${q.type === "fill" ? `<span class="q-badge" style="background:#e0e7ff; color:#3730a3; font-weight:700;">✍️ Điền đáp án</span>` : ""}
           <span class="q-badge">${q.points || 2} điểm</span>
           ${statusBadgeHtml}
         </div>
         <div class="q-actions">
-          <button class="btn-flag ${isFlagged ? "active" : ""}" title="Đánh dấu câu hỏi này" onclick="toggleFlag('${q.id}')">
+          <button class="btn-flag ${isFlagged ? "active" : ""}" title="Đánh dấu câu hỏi này để xem lại" onclick="toggleFlag('${q.id}')">
             ${isFlagged ? "★" : "☆"}
           </button>
         </div>
@@ -334,63 +347,59 @@ function renderQuestionsList(chapter) {
     if (q.type === "fill") {
       bodyHtml = `
         <div class="fill-input-wrapper">
-          <textarea placeholder="Nhập câu trả lời hoặc các thông số của bạn tại đây..." 
+          <textarea placeholder="${isSubmitted ? "" : "Nhập câu trả lời hoặc các thông số bài tập của bạn tại đây..."}" 
             onchange="handleFillInput('${q.id}', this.value)"
-            ${isExamSubmitted ? "disabled" : ""}>${escapeHtml(typeof currentAns === "string" ? currentAns : "")}</textarea>
+            ${isSubmitted ? "disabled" : ""}>${escapeHtml(typeof currentAns === "string" ? currentAns : "")}</textarea>
         </div>
       `;
     } else if (q.options) {
       bodyHtml = `<div class="options-list">`;
       q.options.forEach((opt) => {
         const isSelected = Array.isArray(currentAns) && currentAns.includes(opt.key);
-        let optClass = "option-item";
+        let optClass = `option-item ${isMultiChoice ? "multiple" : "single"}`;
+
         if (isSelected) optClass += " selected";
 
-        // Show right/wrong colors in practice mode (if answered) or after exam submit
-        if ((isPractice && isAnswered) || isExamSubmitted) {
-          if (q.correct.includes(opt.key)) {
+        let tagHtml = "";
+        // FEEDBACK IS SHOWN ONLY AFTER SUBMISSION!
+        if (isSubmitted) {
+          const isThisCorrect = q.correct.includes(opt.key);
+          if (isThisCorrect) {
             optClass += " opt-correct";
-          } else if (isSelected && !q.correct.includes(opt.key)) {
+            tagHtml = `<span class="option-tag tag-correct">✓ Đáp án đúng</span>`;
+          } else if (isSelected && !isThisCorrect) {
             optClass += " opt-wrong";
+            tagHtml = `<span class="option-tag tag-your-choice">✗ Bạn đã chọn</span>`;
           }
         }
 
         bodyHtml += `
           <div class="${optClass}" onclick="handleOptionClick('${q.id}', '${opt.key}', '${q.type}')">
-            <span class="option-key">${opt.key}</span>
+            <span class="option-key">${isMultiChoice ? (isSelected ? "☑" : "☐") : opt.key}</span>
             <span class="option-text">${escapeHtml(opt.text)}</span>
+            ${tagHtml}
           </div>
         `;
       });
       bodyHtml += `</div>`;
     }
 
-    // Explanation Box
-    const showExp = (isPractice && isAnswered) || isExamSubmitted;
-    const expHtml = `
-      <div class="explanation-box ${showExp ? "show" : ""}" id="exp_${q.id}">
-        <div class="exp-title">💡 Giải thích & Đáp án chuẩn:</div>
-        <div class="exp-content">
-          ${q.correctText ? `<p><strong>Đáp án đúng:</strong> ${escapeHtml(q.correctText)}</p>` : ""}
-          ${q.type !== "fill" ? `<p><strong>Đáp án đúng:</strong> ${q.correct.join(", ")}</p>` : ""}
-          <p>${escapeHtml(q.explanation || "Không có giải thích chi tiết.")}</p>
-        </div>
-      </div>
-    `;
-
-    // Card Footer (Check button for practice)
-    let footerHtml = "";
-    if (isPractice) {
-      footerHtml = `
-        <div class="card-footer">
-          <button class="btn btn-outline btn-sm" onclick="toggleExplanation('${q.id}')">
-            ${showExp ? "Ẩn giải thích" : "Xem đáp án & giải thích"}
-          </button>
+    // Explanation Box (SHOWN ONLY AFTER SUBMISSION!)
+    let expHtml = "";
+    if (isSubmitted) {
+      expHtml = `
+        <div class="explanation-box show" id="exp_${q.id}">
+          <div class="exp-title">💡 Giải thích & Đáp án chuẩn xác:</div>
+          <div class="exp-content">
+            ${q.type !== "fill" ? `<p><strong>Đáp án đúng:</strong> <span style="color:var(--success); font-weight:bold;">${q.correct.join(", ")}</span></p>` : ""}
+            ${q.correctText ? `<p><strong>Kết quả:</strong> <span style="color:var(--success); font-weight:bold;">${escapeHtml(q.correctText)}</span></p>` : ""}
+            <p>${escapeHtml(q.explanation || "Không có giải thích chi tiết.")}</p>
+          </div>
         </div>
       `;
     }
 
-    card.innerHTML = headerHtml + textHtml + bodyHtml + expHtml + footerHtml;
+    card.innerHTML = headerHtml + textHtml + bodyHtml + expHtml;
     container.appendChild(card);
   });
 
@@ -400,7 +409,8 @@ function renderQuestionsList(chapter) {
 // Option Click Handler
 function handleOptionClick(qId, key, qType) {
   const chapterId = state.currentChapterId;
-  if (state.examSubmitted[chapterId]) return; // locked after submission
+  const isSubmitted = !!state.examSubmitted[chapterId];
+  if (isSubmitted) return; // Locked after submitting
 
   if (!state.userAnswers[chapterId][qId]) {
     state.userAnswers[chapterId][qId] = [];
@@ -410,24 +420,48 @@ function handleOptionClick(qId, key, qType) {
   if (!Array.isArray(selected)) selected = [];
 
   if (qType === "multiple") {
-    // Multi-select toggle
+    // Multi-select: toggle independent choice without affecting others
     if (selected.includes(key)) {
       selected = selected.filter((k) => k !== key);
     } else {
       selected.push(key);
     }
   } else {
-    // Single select
+    // Single select: choose only one option
     selected = [key];
   }
 
   state.userAnswers[chapterId][qId] = selected;
   saveState();
 
-  // Re-render this question card
-  updateQuestionCard(qId);
+  // Update visual selection only (NO RIGHT/WRONG OR EXPLANATION SHOWN!)
+  updateQuestionSelectionUI(qId, qType, selected);
   updatePaletteItem(qId);
-  updateProgress(QUIZ_DATA[chapterId]);
+  updateProgress(QUIZ_DATA[chapterId], false);
+}
+
+// Update option item UI while taking quiz (Clean selection)
+function updateQuestionSelectionUI(qId, qType, selected) {
+  const card = document.getElementById(`qcard_${qId}`);
+  if (!card) return;
+
+  const isMulti = qType === "multiple";
+  const optionItems = card.querySelectorAll(".option-item");
+
+  optionItems.forEach((optItem) => {
+    // Extract key: for single it's the text inside .option-key, for multi check onclick attribute
+    const onclickStr = optItem.getAttribute("onclick") || "";
+    const match = onclickStr.match(/'([^']+)',\s*'([^']+)'/);
+    const key = match ? match[2] : "";
+
+    const isSelected = selected.includes(key);
+    optItem.classList.toggle("selected", isSelected);
+
+    if (isMulti) {
+      const keySpan = optItem.querySelector(".option-key");
+      if (keySpan) keySpan.textContent = isSelected ? "☑" : "☐";
+    }
+  });
 }
 
 // Fill-in input handler
@@ -439,7 +473,7 @@ function handleFillInput(qId, value) {
   saveState();
 
   updatePaletteItem(qId);
-  updateProgress(QUIZ_DATA[chapterId]);
+  updateProgress(QUIZ_DATA[chapterId], false);
 }
 
 // Toggle Flag / Bookmark
@@ -461,15 +495,7 @@ function toggleFlag(qId) {
   updatePaletteItem(qId);
 }
 
-// Toggle Single Explanation
-function toggleExplanation(qId) {
-  const expBox = document.getElementById(`exp_${qId}`);
-  if (expBox) {
-    expBox.classList.toggle("show");
-  }
-}
-
-// Toggle All Explanations
+// Toggle All Explanations (Only available after submission)
 function toggleAllExplanations() {
   const boxes = document.querySelectorAll(".explanation-box");
   const anyClosed = Array.from(boxes).some((b) => !b.classList.contains("show"));
@@ -483,8 +509,7 @@ function toggleAllExplanations() {
 function checkAnswerCorrect(q, userAns) {
   if (q.type === "fill") {
     if (typeof userAns !== "string" || !userAns.trim()) return false;
-    // Check if user answer matches or contains key figures
-    return true; // fill exercises are self-evaluated with explanation
+    return true; // fill exercises are evaluated by user against model answer
   }
 
   if (!Array.isArray(userAns) || userAns.length === 0) return false;
@@ -495,60 +520,8 @@ function checkAnswerCorrect(q, userAns) {
   return sortedUser.every((val, idx) => val === sortedCorrect[idx]);
 }
 
-// Fast update single question card without full re-render
-function updateQuestionCard(qId) {
-  const chapter = QUIZ_DATA[state.currentChapterId];
-  const q = chapter.questions.find((item) => item.id === qId);
-  if (!q) return;
-
-  const card = document.getElementById(`qcard_${qId}`);
-  if (!card) return;
-
-  const currentAns = state.userAnswers[chapter.id][qId] || [];
-  const isAnswered = Array.isArray(currentAns) && currentAns.length > 0;
-  const isCorrect = isAnswered && checkAnswerCorrect(q, currentAns);
-  const isPractice = state.mode === "practice";
-  const isExamSubmitted = state.examSubmitted[chapter.id];
-
-  // Update option classes
-  const optionItems = card.querySelectorAll(".option-item");
-  optionItems.forEach((optItem) => {
-    const key = optItem.querySelector(".option-key").textContent.trim();
-    const isSelected = currentAns.includes(key);
-
-    optItem.className = "option-item";
-    if (isSelected) optItem.classList.add("selected");
-
-    if ((isPractice && isAnswered) || isExamSubmitted) {
-      if (q.correct.includes(key)) {
-        optItem.classList.add("opt-correct");
-      } else if (isSelected && !q.correct.includes(key)) {
-        optItem.classList.add("opt-wrong");
-      }
-    }
-  });
-
-  // Update status badge
-  let statusBadge = card.querySelector(".q-status-badge");
-  if (!statusBadge) {
-    statusBadge = document.createElement("span");
-    statusBadge.className = "q-status-badge";
-    card.querySelector(".q-meta").appendChild(statusBadge);
-  }
-
-  if (isPractice && isAnswered) {
-    statusBadge.className = `q-status-badge ${isCorrect ? "correct" : "incorrect"}`;
-    statusBadge.style.display = "inline-flex";
-    statusBadge.textContent = isCorrect ? "✓ Đúng" : "✗ Sai";
-
-    // auto open explanation in practice mode
-    const exp = card.querySelector(".explanation-box");
-    if (exp) exp.classList.add("show");
-  }
-}
-
 // Question Palette (Grid on the right)
-function renderPalette(chapter) {
+function renderPalette(chapter, isSubmitted) {
   const palette = document.getElementById("paletteGrid");
   if (!palette) return;
   palette.innerHTML = "";
@@ -561,7 +534,7 @@ function renderPalette(chapter) {
     item.textContent = qNum;
     item.title = `Câu ${qNum}`;
 
-    updatePaletteItemElement(item, q, chapter.id);
+    updatePaletteItemElement(item, q, chapter.id, isSubmitted);
 
     item.addEventListener("click", () => {
       scrollToQuestion(q.id);
@@ -575,28 +548,33 @@ function updatePaletteItem(qId) {
   const chapter = QUIZ_DATA[state.currentChapterId];
   const q = chapter.questions.find((item) => item.id === qId);
   const item = document.getElementById(`pal_${qId}`);
+  const isSubmitted = !!state.examSubmitted[chapter.id];
   if (item && q) {
-    updatePaletteItemElement(item, q, chapter.id);
+    updatePaletteItemElement(item, q, chapter.id, isSubmitted);
   }
 }
 
-function updatePaletteItemElement(item, q, chapterId) {
+function updatePaletteItemElement(item, q, chapterId, isSubmitted) {
   const currentAns = state.userAnswers[chapterId][q.id];
   const isFlagged = !!state.flaggedQuestions[chapterId][q.id];
-  const isAnswered = q.type === "fill" ? (typeof currentAns === "string" && currentAns.trim().length > 0) : (Array.isArray(currentAns) && currentAns.length > 0);
+  const isAnswered = q.type === "fill"
+    ? (typeof currentAns === "string" && currentAns.trim().length > 0)
+    : (Array.isArray(currentAns) && currentAns.length > 0);
   const isCorrect = isAnswered && checkAnswerCorrect(q, currentAns);
-  const isPractice = state.mode === "practice";
-  const isExamSubmitted = state.examSubmitted[chapterId];
 
   item.className = "palette-item";
 
   if (isFlagged) item.classList.add("flagged");
 
-  if (isExamSubmitted || (isPractice && isAnswered)) {
+  if (isSubmitted) {
+    // AFTER SUBMIT: show green for correct, red for incorrect/unanswered
     if (isAnswered) {
       item.classList.add(isCorrect ? "correct" : "incorrect");
+    } else {
+      item.classList.add("incorrect");
     }
   } else if (isAnswered) {
+    // WHILE TAKING QUIZ: show only answered (soft blue)
     item.classList.add("answered");
   }
 }
@@ -604,9 +582,8 @@ function updatePaletteItemElement(item, q, chapterId) {
 function scrollToQuestion(qId) {
   const card = document.getElementById(`qcard_${qId}`);
   if (card) {
-    // If hidden by filter, reset filter to 'all'
     if (card.style.display === "none") {
-      document.querySelector(".filter-chip[data-filter='all']").click();
+      document.querySelector(".filter-chip[data-filter='all']")?.click();
     }
     card.scrollIntoView({ behavior: "smooth", block: "center" });
     card.style.borderColor = "var(--primary)";
@@ -617,7 +594,7 @@ function scrollToQuestion(qId) {
 }
 
 // Progress Bar & Stats
-function updateProgress(chapter) {
+function updateProgress(chapter, isSubmitted) {
   const total = chapter.questions.length;
   let answeredCount = 0;
   let correctCount = 0;
@@ -625,7 +602,9 @@ function updateProgress(chapter) {
 
   chapter.questions.forEach((q) => {
     const ans = state.userAnswers[chapter.id][q.id];
-    const isAnswered = q.type === "fill" ? (typeof ans === "string" && ans.trim().length > 0) : (Array.isArray(ans) && ans.length > 0);
+    const isAnswered = q.type === "fill"
+      ? (typeof ans === "string" && ans.trim().length > 0)
+      : (Array.isArray(ans) && ans.length > 0);
     if (isAnswered) {
       answeredCount++;
       if (checkAnswerCorrect(q, ans)) {
@@ -645,10 +624,16 @@ function updateProgress(chapter) {
   if (countDisplay) countDisplay.textContent = `${answeredCount}/${total} câu (${percent}%)`;
 
   const statCorrect = document.getElementById("sidebarStatCorrect");
-  if (statCorrect) statCorrect.textContent = correctCount;
-
   const statWrong = document.getElementById("sidebarStatWrong");
-  if (statWrong) statWrong.textContent = wrongCount;
+
+  if (isSubmitted) {
+    if (statCorrect) statCorrect.textContent = correctCount;
+    if (statWrong) statWrong.textContent = wrongCount + (total - answeredCount);
+  } else {
+    // Before submission: don't reveal right/wrong counts!
+    if (statCorrect) statCorrect.textContent = "--";
+    if (statWrong) statWrong.textContent = "--";
+  }
 }
 
 // Filtering
@@ -656,16 +641,17 @@ function filterQuestions() {
   const chapter = QUIZ_DATA[state.currentChapterId];
   if (!chapter) return;
 
-  const isExamSubmitted = state.examSubmitted[chapter.id];
-  const isPractice = state.mode === "practice";
+  const isSubmitted = !!state.examSubmitted[chapter.id];
 
-  chapter.questions.forEach((q, index) => {
+  chapter.questions.forEach((q) => {
     const card = document.getElementById(`qcard_${q.id}`);
     if (!card) return;
 
     const currentAns = state.userAnswers[chapter.id][q.id];
     const isFlagged = !!state.flaggedQuestions[chapter.id][q.id];
-    const isAnswered = q.type === "fill" ? (typeof currentAns === "string" && currentAns.trim().length > 0) : (Array.isArray(currentAns) && currentAns.length > 0);
+    const isAnswered = q.type === "fill"
+      ? (typeof currentAns === "string" && currentAns.trim().length > 0)
+      : (Array.isArray(currentAns) && currentAns.length > 0);
     const isCorrect = isAnswered && checkAnswerCorrect(q, currentAns);
 
     let matchFilter = true;
@@ -680,10 +666,12 @@ function filterQuestions() {
         matchFilter = isFlagged;
         break;
       case "wrong":
-        matchFilter = isAnswered && !isCorrect;
+        // Only makes sense if submitted
+        matchFilter = isSubmitted && (!isAnswered || !isCorrect);
         break;
       case "correct":
-        matchFilter = isAnswered && isCorrect;
+        // Only makes sense if submitted
+        matchFilter = isSubmitted && isAnswered && isCorrect;
         break;
       case "all":
       default:
@@ -720,9 +708,9 @@ function confirmSubmitExam() {
   const unanswered = total - answered;
   let confirmMsg = `Bạn đã hoàn thành ${answered}/${total} câu hỏi.`;
   if (unanswered > 0) {
-    confirmMsg += `\nCòn ${unanswered} câu CHƯA TRẢ LỜI. Bạn có chắc chắn muốn nộp bài ngay bây giờ?`;
+    confirmMsg += `\n⚠️ CẢNH BÁO: Còn ${unanswered} câu BẠN CHƯA LÀM!\nBạn có chắc chắn muốn nộp bài để xem đáp án và giải thích ngay bây giờ không?`;
   } else {
-    confirmMsg += `\nBạn có chắc chắn muốn nộp bài để xem kết quả và lời giải chi tiết?`;
+    confirmMsg += `\nBạn đã trả lời hết tất cả ${total} câu hỏi! Bấm OK để nộp bài và xem đáp án cùng giải thích chi tiết.`;
   }
 
   if (confirm(confirmMsg)) {
@@ -739,6 +727,7 @@ function submitExam() {
     state.timerInterval = null;
   }
 
+  // MARK SUBMITTED
   state.examSubmitted[chapterId] = true;
   saveState();
 
@@ -750,7 +739,10 @@ function submitExam() {
 
   chapter.questions.forEach((q) => {
     const ans = state.userAnswers[chapterId][q.id];
-    const isAnswered = q.type === "fill" ? (typeof ans === "string" && ans.trim().length > 0) : (Array.isArray(ans) && ans.length > 0);
+    const isAnswered = q.type === "fill"
+      ? (typeof ans === "string" && ans.trim().length > 0)
+      : (Array.isArray(ans) && ans.length > 0);
+
     if (isAnswered && checkAnswerCorrect(q, ans)) {
       correctCount++;
       totalScoreEarned += (q.points || 2);
@@ -772,6 +764,7 @@ function submitExam() {
     total: totalQuestions
   });
 
+  // Re-render to reveal all answers & explanations
   renderCurrentChapter();
 }
 
@@ -791,11 +784,11 @@ function showResultModal(res) {
   const icon = document.getElementById("modalIcon");
 
   if (pct >= 50) {
-    title.textContent = `🎉 Xuất sắc! Bạn đạt ${pct}%`;
+    title.textContent = `🎉 Bạn đã hoàn thành! Đạt ${pct}%`;
     icon.className = "result-icon pass";
     icon.textContent = "🏆";
   } else {
-    title.textContent = `Cố gắng lên! Bạn đạt ${pct}%`;
+    title.textContent = `Bạn đã nộp bài! Đạt ${pct}%`;
     icon.className = "result-icon fail";
     icon.textContent = "💪";
   }
@@ -808,20 +801,18 @@ function closeModal() {
   if (modal) modal.classList.remove("active");
 }
 
-// Reset Quiz
+// Reset Quiz (Làm lại)
 function resetCurrentChapter() {
   const chapterId = state.currentChapterId;
-  if (confirm("Bạn có chắc chắn muốn làm lại đề này từ đầu không? Toàn bộ đáp án đã chọn sẽ được làm mới.")) {
+  if (confirm("Làm lại đề này từ đầu?\nToàn bộ đáp án đã chọn sẽ được làm mới, đáp án và giải thích sẽ được ẩn đi để bạn làm lại.")) {
     state.userAnswers[chapterId] = {};
     state.flaggedQuestions[chapterId] = {};
     state.examSubmitted[chapterId] = false;
     saveState();
 
-    if (state.mode === "exam") {
-      startTimer();
-    }
-
+    resetOrStartTimer();
     renderCurrentChapter();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 }
 
@@ -835,4 +826,3 @@ function escapeHtml(text) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-

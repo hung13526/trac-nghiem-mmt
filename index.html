@@ -52,17 +52,12 @@
         </div>
 
         <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-          <!-- Mode Switcher -->
-          <div class="mode-switch">
-            <button class="mode-btn active" id="btnModePractice">
-              <span>📖</span> Luyện tập (Tức thì)
-            </button>
-            <button class="mode-btn" id="btnModeExam">
-              <span>⏱️</span> Thi thử (Có điểm)
-            </button>
+          <!-- Status Badge -->
+          <div class="banner-status-badge doing" id="bannerStatusBadge">
+            <span>✏️</span> Đang làm bài (Chọn đáp án rồi nhấn Nộp bài)
           </div>
 
-          <!-- Timer for Exam Mode -->
+          <!-- Timer Box -->
           <div class="exam-timer-box" id="examTimerBox">
             <span>⏳</span>
             <span id="timerDisplay">45:00</span>
@@ -92,6 +87,19 @@
         <!-- Rendered by app.js -->
       </div>
 
+      <!-- Bottom Submit Bar -->
+      <div class="bottom-submit-bar" id="bottomSubmitBar">
+        <div>
+          <strong style="font-size: 1rem;">Đã hoàn thành các câu hỏi?</strong>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 2px;">
+            Bấm "Nộp bài" để hệ thống chấm điểm, mở đáp án đúng và toàn bộ lời giải chi tiết.
+          </p>
+        </div>
+        <button id="btnBottomSubmit" class="btn btn-success" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
+          <span>📝</span> Nộp bài & Xem đáp án
+        </button>
+      </div>
+
     </section>
 
     <!-- Right Column: Sticky Question Palette & Progress -->
@@ -111,11 +119,11 @@
       <!-- Quick Stats -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; text-align: center;">
         <div style="background: var(--success-light); color: var(--success-text); padding: 0.5rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 700;">
-          <div id="sidebarStatCorrect" style="font-size: 1.2rem; font-weight: 800;">0</div>
+          <div id="sidebarStatCorrect" style="font-size: 1.2rem; font-weight: 800;">--</div>
           Câu đúng
         </div>
         <div style="background: var(--danger-light); color: var(--danger-text); padding: 0.5rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 700;">
-          <div id="sidebarStatWrong" style="font-size: 1.2rem; font-weight: 800;">0</div>
+          <div id="sidebarStatWrong" style="font-size: 1.2rem; font-weight: 800;">--</div>
           Câu sai
         </div>
       </div>
@@ -132,11 +140,11 @@
 
       <!-- Action Buttons -->
       <div class="sidebar-actions">
-        <button id="btnSubmitExam" class="btn btn-success" style="display: none; width: 100%;">
+        <button id="btnSubmitExam" class="btn btn-success" style="width: 100%;">
           <span>📝</span> Nộp bài & Chấm điểm
         </button>
-        <button id="btnShowAllExplanations" class="btn btn-outline" style="width: 100%;">
-          <span>💡</span> Bật/Tắt tất cả giải thích
+        <button id="btnToggleAllExp" class="btn btn-outline" style="display: none; width: 100%;">
+          <span>💡</span> Ẩn/Hiện toàn bộ giải thích
         </button>
         <button id="btnResetQuiz" class="btn btn-outline" style="width: 100%;">
           <span>🔄</span> Làm lại đề này
@@ -202,4 +210,3 @@
 
 </body>
 </html>
-

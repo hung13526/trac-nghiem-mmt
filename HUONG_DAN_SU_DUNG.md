@@ -28,16 +28,21 @@ Bạn có thể mở ứng dụng theo 1 trong 2 cách cực kỳ đơn giản:
   - **⚡ Chương 4 (60 câu)**
   - **🏆 Đề thi Eduso (100 câu - Mẫu đề 45p 200đ)**
 
-### 2. Hai chế độ học tập linh hoạt:
-- **📖 Chế độ Luyện tập (Practice Mode):**
-  - Khi bạn click chọn một phương án, hệ thống sẽ **ngay lập tức hiển thị phản hồi** (Màu xanh: Đúng, Màu đỏ: Sai kèm gạch ngang).
-  - Tự động mở hộp **Giải thích & Đáp án chuẩn** giải thích cặn kẽ tại sao đúng/sai và các kiến thức cốt lõi cần nhớ.
-  - Có nút **"Bật/Tắt tất cả giải thích"** hoặc xem từng câu để học thuộc nhanh.
-- **⏱️ Chế độ Thi thử (Exam Mode):**
-  - Bật đồng hồ đếm ngược **45:00** (chuẩn thời gian làm bài thi Eduso).
-  - Đáp án được giữ kín trong quá trình làm bài.
-  - Nút **"Nộp bài & Chấm điểm"**: khi nộp bài hệ thống kiểm tra và cảnh báo nếu còn câu chưa làm.
-  - Bảng tổng kết kết quả chi tiết: Điểm số (trên thang 200 điểm), Số câu đúng, Số câu sai, Số câu chưa làm, Tỷ lệ % đạt được.
+### 2. Quy trình làm bài và nộp bài chuẩn xác:
+- **Làm bài & Chọn đáp án:**
+  - Đối với các câu hỏi thường (Chọn 1): Click vào phương án bạn chọn (nút tròn).
+  - Đối với các câu hỏi **"Chọn nhiều đáp án" (Chọn 3)**: Click vào từng phương án độc lập (ô vuông ☑️). Bạn có thể chọn 2, 3 phương án tùy ý hoặc click lại để bỏ chọn.
+  - **Trong lúc làm bài:** Hệ thống giữ bí mật tuyệt đối, KHÔNG hiện đáp án đúng/sai và KHÔNG hiện giải thích để bạn tập trung làm hết bài thi.
+- **Nộp bài & Xem kết quả:**
+  - Sau khi làm xong, nhấn nút **"📝 Nộp bài & Xem đáp án"** (ở cột bên phải hoặc dưới chân trang).
+  - Hệ thống kiểm tra xem bạn còn câu nào chưa làm và cảnh báo nếu có.
+  - Sau khi xác nhận nộp bài:
+    - Bảng điểm và kết quả tổng quan sẽ hiện lên.
+    - Toàn bộ các câu đúng sẽ hiển thị màu **Xanh lá (✓ Đúng)**.
+    - Các câu làm sai sẽ hiển thị màu **Đỏ (✗ Sai)** kèm nhãn *"Bạn đã chọn"* và *"✓ Đáp án đúng"*.
+    - Toàn bộ hộp **"Giải thích & Đáp án chuẩn"** sẽ mở ra cho từng câu để bạn đọc và rút kinh nghiệm.
+- **Làm lại từ đầu:**
+  - Nhấn nút **"🔄 Làm lại đề này"** bất kỳ lúc nào để làm mới toàn bộ bài thi và ẩn lại đáp án.
 
 ### 3. Xem lại các câu sai (Tính năng cốt lõi)
 - Sau khi làm xong hoặc nộp bài, bạn chỉ cần bấm nút **"🔍 Xem lại các câu sai"** hoặc chọn bộ lọc **"✗ Câu sai"** trên thanh công cụ.

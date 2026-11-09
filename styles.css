@@ -41,7 +41,7 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
   
-  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 [data-theme="dark"] {
@@ -213,7 +213,6 @@ body {
   color: white;
 }
 
-/* Special highlight for Eduso exam tab */
 .tab-btn.eduso-tab {
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.1));
   border-color: rgba(245, 158, 11, 0.3);
@@ -291,49 +290,41 @@ body {
   font-weight: 500;
 }
 
-/* Mode Switcher Buttons */
-.mode-switch {
+/* Header Status Badges */
+.banner-status-badge {
   display: flex;
-  background: var(--bg-card-hover);
-  padding: 4px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  gap: 4px;
-}
-
-.mode-btn {
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.5rem 1rem;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.banner-status-badge.doing {
+  background: var(--primary-light);
+  color: var(--primary-text);
+  border: 1px solid var(--primary);
+}
+
+.banner-status-badge.submitted {
+  background: var(--success-light);
+  color: var(--success-text);
+  border: 1px solid var(--success);
+}
+
+/* Timer Box */
+.exam-timer-box {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  transition: var(--transition);
-}
-
-.mode-btn.active {
-  background: var(--bg-card);
-  color: var(--primary);
-  box-shadow: var(--shadow-sm);
-}
-
-/* Timer Box in Exam Mode */
-.exam-timer-box {
-  display: none;
-  align-items: center;
-  gap: 0.75rem;
-  background: var(--warning-light);
-  border: 1px solid var(--warning);
-  padding: 0.6rem 1.25rem;
+  gap: 0.6rem;
+  background: var(--bg-card-hover);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
   border-radius: var(--radius-md);
-  color: var(--warning-text);
+  color: var(--text-main);
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .exam-timer-box.warning {
@@ -441,7 +432,7 @@ body {
 
 .question-card {
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  border: 1.5px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   box-shadow: var(--shadow-sm);
@@ -450,8 +441,15 @@ body {
 }
 
 .question-card:hover {
-  box-shadow: var(--shadow-md);
   border-color: rgba(59, 130, 246, 0.3);
+}
+
+.question-card.status-correct {
+  border-color: var(--success);
+}
+
+.question-card.status-wrong {
+  border-color: var(--danger);
 }
 
 .question-header {
@@ -497,8 +495,21 @@ body {
 [data-theme="dark"] .q-badge.level-vd { background: rgba(180, 83, 9, 0.2); color: #fde047; }
 [data-theme="dark"] .q-badge.level-vdc { background: rgba(185, 28, 28, 0.2); color: #fca5a5; }
 
+.q-badge.badge-multi {
+  background: #fef08a;
+  color: #854d0e;
+  border: 1px solid #eab308;
+  font-weight: 700;
+}
+
+[data-theme="dark"] .q-badge.badge-multi {
+  background: rgba(234, 179, 8, 0.2);
+  color: #fde047;
+  border-color: rgba(234, 179, 8, 0.4);
+}
+
 .q-status-badge {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 700;
   padding: 0.25rem 0.65rem;
   border-radius: var(--radius-full);
@@ -508,13 +519,15 @@ body {
 .q-status-badge.correct {
   display: inline-flex;
   background: var(--success-light);
-  color: var(--success);
+  color: var(--success-text);
+  border: 1px solid var(--success);
 }
 
 .q-status-badge.incorrect {
   display: inline-flex;
   background: var(--danger-light);
-  color: var(--danger);
+  color: var(--danger-text);
+  border: 1px solid var(--danger);
 }
 
 .q-actions {
@@ -557,12 +570,12 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .option-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.85rem;
   padding: 0.85rem 1.15rem;
   border-radius: var(--radius-md);
@@ -578,6 +591,7 @@ body {
   border-color: rgba(59, 130, 246, 0.4);
 }
 
+/* Selected state during quiz (clean blue) */
 .option-item.selected {
   background: var(--primary-light);
   border-color: var(--primary);
@@ -585,7 +599,7 @@ body {
   font-weight: 600;
 }
 
-/* Feedback states */
+/* Feedback states AFTER SUBMISSION */
 .option-item.opt-correct {
   background: var(--success-light) !important;
   border-color: var(--success) !important;
@@ -603,7 +617,6 @@ body {
 .option-key {
   width: 28px;
   height: 28px;
-  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -613,6 +626,16 @@ body {
   border: 1px solid var(--border-color);
   flex-shrink: 0;
   transition: var(--transition);
+}
+
+/* Single choice: circular radio */
+.option-item.single .option-key {
+  border-radius: var(--radius-full);
+}
+
+/* Multiple choice: square checkbox */
+.option-item.multiple .option-key {
+  border-radius: 6px;
 }
 
 .option-item.selected .option-key {
@@ -635,8 +658,25 @@ body {
 
 .option-text {
   font-size: 0.95rem;
-  padding-top: 2px;
   flex: 1;
+}
+
+.option-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  margin-left: auto;
+}
+
+.option-tag.tag-correct {
+  background: var(--success);
+  color: white;
+}
+
+.option-tag.tag-your-choice {
+  background: var(--danger);
+  color: white;
 }
 
 /* Fill-in Question Input */
@@ -663,7 +703,7 @@ body {
   border-color: var(--border-focus);
 }
 
-/* ================= Explanation Box ================= */
+/* ================= Explanation Box (Shown ONLY after submission) ================= */
 .explanation-box {
   display: none;
   margin-top: 1.25rem;
@@ -699,14 +739,19 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Card Footer with Buttons */
-.card-footer {
+/* Bottom submit banner on question list */
+.bottom-submit-bar {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
   display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px dashed var(--border-color);
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: var(--shadow-sm);
+  margin-top: 1rem;
+  flex-wrap: wrap;
 }
 
 /* ================= Right Sidebar (Question Palette & Progress) ================= */
@@ -796,22 +841,24 @@ body {
   transform: scale(1.05);
 }
 
+/* While taking quiz: show answered state */
 .palette-item.answered {
   background: var(--primary-light);
   color: var(--primary);
   border-color: var(--primary);
 }
 
+/* AFTER submission: show right / wrong */
 .palette-item.correct {
-  background: var(--success);
-  color: white;
-  border-color: var(--success);
+  background: var(--success) !important;
+  color: white !important;
+  border-color: var(--success) !important;
 }
 
 .palette-item.incorrect {
-  background: var(--danger);
-  color: white;
-  border-color: var(--danger);
+  background: var(--danger) !important;
+  color: white !important;
+  border-color: var(--danger) !important;
 }
 
 .palette-item.flagged::after {
@@ -989,6 +1036,7 @@ body {
   gap: 0.75rem;
   justify-content: center;
   margin-top: 1.5rem;
+  flex-wrap: wrap;
 }
 
 /* ================= Footer ================= */
@@ -1017,4 +1065,3 @@ footer {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
-
